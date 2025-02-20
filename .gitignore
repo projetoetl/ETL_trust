@@ -1,0 +1,17 @@
+App/.venv
+App/data
+App\__pycache__
+ARQUIVOS
+data_pronto
+# Ignorar arquivos compilados do Python
+*.pyc
+__pycache__/
+
+# Ignorar arquivos de configuração do Visual Studio
+.vs/
+.vscode/
+
+
+# Outros arquivos gerados automaticamente
+*.log
+*.tmp
