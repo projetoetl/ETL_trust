@@ -5,8 +5,19 @@ Realizando uma pipeline baixar, extrair e manipular os dados para processamento 
 ### Infraestrutura necessária:
 - [Python 3.8](https://www.python.org/downloads/release/python-3810/)
 
+### pacote utilizados no processo:
+- pyarrow
+- Pandas
+- Zipfile
+- Shutil
+- Bs4 - BeautifulSoup
+- Requests
+- Os
+- Glob
+- Tqdm
 
-### Tabelas geradas:
+
+### pacote de dados que contem na base:
 - Para maiores informações, consulte o [layout](https://www.gov.br/receitafederal/pt-br/assuntos/orientacao-tributaria/cadastros/consultas/arquivos/NOVOLAYOUTDOSDADOSABERTOSDOCNPJ.pdf).
   - `empresa`: dados cadastrais da empresa em nível de matriz
   - `estabelecimento`: dados analíticos da empresa por unidade / estabelecimento (telefones, endereço, filial, etc)
