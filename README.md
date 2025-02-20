@@ -5,7 +5,7 @@ Esse projeto traz uma pipeline para baixar, extrair e manipular os dados do link
 ### Infraestrutura necessária:
 - [Python 3.8](https://www.python.org/downloads/release/python-3810/)
 
-### pacote utilizados no processo:
+### Pacote utilizados no processo:
 - pyarrow
 - Pandas
 - Zipfile
@@ -16,7 +16,7 @@ Esse projeto traz uma pipeline para baixar, extrair e manipular os dados do link
 - Glob
 - Tqdm
 
-####  ETAPAS DO DADO  ###
+####  Etapa do dado
 - DATA RAW  - Dados baixados em formato zip precisando ser extraido 
 
 - DATA READY - Alguns dados foram manipulados em formato ( parquert ) melhorando a eficiência do processamento, tendo em vista que o parquet trabalha com uma estrutura de leitura 
@@ -29,7 +29,7 @@ Vantagens do Parquet para grandes arquivos:
  Suporte a Metadados
 
 
-### pacote de dados que contem na base:
+### Pacote de dados que contem na base
 - Para maiores informações, consulte o [layout](https://www.gov.br/receitafederal/pt-br/assuntos/orientacao-tributaria/cadastros/consultas/arquivos/NOVOLAYOUTDOSDADOSABERTOSDOCNPJ.pdf).
   - `empresa`: dados cadastrais da empresa em nível de matriz
   - `estabelecimento`: dados analíticos da empresa por unidade / estabelecimento (telefones, endereço, filial, etc)
