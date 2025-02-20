@@ -1,6 +1,6 @@
-# Dados Públicos CNPJ
+# Processamento de dados da receita federal
 A Receita Federal do Brasil disponibiliza bases com os dados públicos do cadastro nacional de pessoas jurídicas (CNPJ).
-Realizando uma pipeline baixar, extrair e manipular os dados para processamento realizando uma ETL para o uso da empresa Trust Work.
+Esse projeto traz uma pipeline para baixar, extrair e manipular os dados do link  (https://arquivos.receitafederal.gov.br/cnpj/dados_abertos_cnpj/2025-01/) processamento realizando uma ETL para o uso da empresa Trust Work.
 
 ### Infraestrutura necessária:
 - [Python 3.8](https://www.python.org/downloads/release/python-3810/)
