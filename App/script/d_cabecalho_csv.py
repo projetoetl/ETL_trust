@@ -7,7 +7,28 @@ import pyarrow.parquet as pq
 import pyarrow as pa
 from App.script.caminhos_csv import caminho_cnae, caminho_motivo, caminho_simples, caminho_municipios,caminho_natureza,caminho_pais, caminho_qualificacao,caminho_socio, caminho_empresas, caminho_estabelecimento
 
+def csvToSeriesIndex(filename):
+    codigo = ""
+    descricao = ""    
 
+    for linha in pd.read_csv(filename,
+                        sep=";", 
+                        encoding="latin1",  
+                        dtype=str, 
+                        quotechar='"', 
+                        header=None,  # Não usa a primeira linha como cabeçalho
+                        chunksize=30000):
+        
+        linha.columns = [
+            'CÓDIGO','DESCRIÇÃO'
+        ]
+
+        codigo +=  linha['CÓDIGO']
+        descricao += linha['DESCRIÇÃO']
+
+    lista = pd.Series(list(descricao), index=list(codigo))
+    
+    return lista
 
 def add_cabecalho():
     caminho_arquivo = caminho_cnae()
@@ -255,6 +276,9 @@ def add_cabecalho():
 
     # Lista para armazenar os DataFrames de cada arquivo
     lista_dfs = []
+    tipo_socio = {'1':'Pessoa Jurídica', '2':'Pessoa Física', '3':'Estrangeiro'}
+    paises = csvToSeriesIndex(caminho_pais)
+    quals = csvToSeriesIndex(caminho_qualificacao)
 
     # Iterar sobre os arquivos CSV e ler cada um
     for arquivo in arquivos_csv:
@@ -280,18 +304,25 @@ def add_cabecalho():
         # Verificar os nomes das colunas para garantir que estão corretos
         print(f"Colunas do arquivo {arquivo}: {df.columns.tolist()}")  # Exibe as colunas do arquivo
 
-        # Verificar se a coluna 'cnpj_basico' existe, e se não, criar com base no identificador_socio
-        if 'cnpj_basico' not in df.columns:
-            print(f"Coluna 'cnpj_basico' não encontrada no arquivo {arquivo}, criando a partir de 'identificador_socio'.")
-            df['cnpj_basico'] = df['identificador_socio'].str[:8]  # Criar a coluna com os 8 primeiros caracteres de 'identificador_socio'
+        # Essas verificações abaixo estão na mesma linha que não faz sentido, CNPJ não pode ser substituido por nada e nem razão social, se não tiver deixar em branco (Rafael)
 
-        # Verificar se a coluna 'nome_socio_razao_social' existe, e se não, criar com base no identificador_socio
-        if 'nome_socio_razao_social' not in df.columns:
-            print(f"Coluna 'nome_socio_razao_social' não encontrada no arquivo {arquivo}, criando a partir de 'identificador_socio'.")
-            df['nome_socio_razao_social'] = df['identificador_socio'].str[8:]  # Criar a coluna com o restante de 'identificador_socio'
+        # # Verificar se a coluna 'cnpj_basico' existe, e se não, criar com base no identificador_socio
+        # if 'cnpj_basico' not in df.columns:
+        #     print(f"Coluna 'cnpj_basico' não encontrada no arquivo {arquivo}, criando a partir de 'identificador_socio'.")
+        #     df['cnpj_basico'] = df['identificador_socio'].str[:8]  # Criar a coluna com os 8 primeiros caracteres de 'identificador_socio'
+
+        # # Verificar se a coluna 'nome_socio_razao_social' existe, e se não, criar com base no identificador_socio
+        # if 'nome_socio_razao_social' not in df.columns:
+        #     print(f"Coluna 'nome_socio_razao_social' não encontrada no arquivo {arquivo}, criando a partir de 'identificador_socio'.")
+        #     df['nome_socio_razao_social'] = df['identificador_socio'].str[8:]  # Criar a coluna com o restante de 'identificador_socio'
+
+        # Substituição dos valores na tabela
+        df['identificador_socio'] = df['identificador_socio'].map(tipo_socio)
+        df['qualificacao_socio'] = df['qualificacao_socio'].map(quals)
+        df['pais'] = df['pais'].map(paises)
 
         # Remover espaços extras das colunas
-        df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+        df = df.map(lambda x: x.strip() if isinstance(x, str) else x)
 
         # Reordenar as colunas conforme o formato desejado
         df_reordenado = df[['cnpj_basico', 'identificador_socio', 'nome_socio_razao_social', 'cpf_cnpj_socio', 
@@ -317,6 +348,10 @@ def add_cabecalho():
 
     pastas_das_empresas =  caminho_empresas()
     listando_os_arquivos = glob.glob(os.path.join(pastas_das_empresas, "*.csv"))
+
+    # Define uma Series para substituicao
+    natureza = csvToSeriesIndex(caminho_natureza)
+    porte = {'00':'Não Informado', '01':'Micro Empresa', '03':'Empresa de Pequeno Porte', '05':'Demais'}
 
     # Definindo o tamanho dos chunks
     chunk_size = 7000
@@ -350,6 +385,11 @@ def add_cabecalho():
 
                 if "cnpj_basico" not in chunk.columns:
                     chunk["cnpj_basico"] = chunk["razao_social"].str[:16]
+
+                # Substituindo valores encontrados em outras tabelas
+                chunk['natureza_juridica'] = chunk['natureza_juridica'].map(natureza)
+                chunk['qualificacao_responsavel'] = chunk['qualificacao_responsavel'].map(quals)
+                chunk['porte_empresa'] = chunk['porte_empresa'].map(porte)
 
                 chunk = chunk.applymap(lambda x: x.strip() if isinstance(x, str) else x)
                 
@@ -398,14 +438,16 @@ def add_cabecalho():
 
 # ------------- ESTABELECIMENTO
 
-
-
     estabelecimento = caminho_estabelecimento()
 
     arquivos_csv = glob.glob(os.path.join(estabelecimento, "*.csv"))
 
     # Lista para armazenar os DataFrames de cada arquivo
     lista_dfs = []
+    situacao = {'01':'NULA', '02':'ATIVA', '03':'SUSPENSA','04':'INAPTA','08':'BAIXADA'}
+    matriz = {'1':'MATRIZ', '2':'FILIAL'}
+    motivo = csvToSeriesIndex(caminho_motivo)
+    municipio = csvToSeriesIndex(caminho_municipios)
 
     chunk_size = 1000  
     saida_parquet = "estabelecimentos_completo.parquet"
@@ -457,8 +499,15 @@ def add_cabecalho():
                                 'data_situacao_especial']
                 
                 # Verificar se a coluna 'cnpj_basico' existe, e se não, criar com base no 'cnpj_ordem'
-                if 'cnpj_basico' not in chunk.columns:
-                    chunk['cnpj_basico'] = chunk['cnpj_ordem'].str[:8]  
+                # if 'cnpj_basico' not in chunk.columns:
+                #     chunk['cnpj_basico'] = chunk['cnpj_ordem'].str[:8]  
+
+                # Substituindo valores na tabela com valores encontrados em outras tabelas
+                chunk['situacao_cadastral'] = chunk['situacao_cadastral'].map(situacao)
+                chunk['pais'] = chunk['pais'].map(paises)
+                chunk['identificador_matriz_filial'] = chunk['identificador_matriz_filial'].map(matriz)
+                chunk['motivo_situacao_cadastral'] = chunk['motivo_situacao_cadastral'].map(motivo)
+                chunk['municipio'] = chunk['municipio'].map(municipio)
 
                 # Remover espaços extras das colunas
                 chunk = chunk.applymap(lambda x: x.strip() if isinstance(x, str) else x)
