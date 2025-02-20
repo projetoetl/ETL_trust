@@ -16,7 +16,7 @@ Esse projeto traz uma pipeline para baixar, extrair e manipular os dados do link
 - Glob
 - Tqdm
 
-- ####  ETAPAS DO DADO  ###
+####  ETAPAS DO DADO  ###
 - DATA RAW  - Dados baixados em formato zip precisando ser extraido 
 
 - DATA READY - Alguns dados foram manipulados em formato ( parquert ) melhorando a eficiência do processamento, tendo em vista que o parquet trabalha com uma estrutura de leitura 
