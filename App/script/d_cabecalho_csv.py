@@ -213,12 +213,12 @@ def add_cabecalho():
                                 'data_opcao_mei',
                                 'data_exclusao_mei']
                 
-                # Garantir que a coluna 'cnpj_basico' exista
-                if "cnpj_basico" not in chunk.columns:
-                    chunk["cnpj_basico"] = chunk["opcao_pelo_simples"].str[:20]
+                # # Garantir que a coluna 'cnpj_basico' exista
+                # if "cnpj_basico" not in chunk.columns:
+                #     chunk["cnpj_basico"] = chunk["opcao_pelo_simples"].str[:20]
                 
                 # Limpar espaços em branco
-                chunk = chunk.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+                chunk = chunk.map(lambda x: x.strip() if isinstance(x, str) else x)
 
                 # Converter as colunas de data para o formato datetime
                 chunk['data_opcao_simples'] = pd.to_datetime(chunk['data_opcao_simples'], errors='coerce')
@@ -265,7 +265,7 @@ def add_cabecalho():
                 
             lista_chunks.clear()
         print('LIBERAÇÃO DE MEMÓRIA FEITA')
-        print('SEGUINDO PARA O PROCESSO DOS ESTABELECIMENTO')
+        print('SEGUINDO PARA O PROCESSO DOS SÓCIOS')
 
  # ------------- SOCIO
 
@@ -277,8 +277,8 @@ def add_cabecalho():
     # Lista para armazenar os DataFrames de cada arquivo
     lista_dfs = []
     tipo_socio = {'1':'Pessoa Jurídica', '2':'Pessoa Física', '3':'Estrangeiro'}
-    paises = csvToSeriesIndex(caminho_pais)
-    quals = csvToSeriesIndex(caminho_qualificacao)
+    paises = csvToSeriesIndex(caminho_pais())
+    quals = csvToSeriesIndex(caminho_qualificacao())
 
     # Iterar sobre os arquivos CSV e ler cada um
     for arquivo in arquivos_csv:
@@ -302,7 +302,7 @@ def add_cabecalho():
         df.columns = colunas
 
         # Verificar os nomes das colunas para garantir que estão corretos
-        print(f"Colunas do arquivo {arquivo}: {df.columns.tolist()}")  # Exibe as colunas do arquivo
+        # print(f"Colunas do arquivo {arquivo}: {df.columns.tolist()}")  # Exibe as colunas do arquivo
 
         # Essas verificações abaixo estão na mesma linha que não faz sentido, CNPJ não pode ser substituido por nada e nem razão social, se não tiver deixar em branco (Rafael)
 
@@ -350,7 +350,7 @@ def add_cabecalho():
     listando_os_arquivos = glob.glob(os.path.join(pastas_das_empresas, "*.csv"))
 
     # Define uma Series para substituicao
-    natureza = csvToSeriesIndex(caminho_natureza)
+    natureza = csvToSeriesIndex(caminho_natureza())
     porte = {'00':'Não Informado', '01':'Micro Empresa', '03':'Empresa de Pequeno Porte', '05':'Demais'}
 
     # Definindo o tamanho dos chunks
@@ -391,7 +391,7 @@ def add_cabecalho():
                 chunk['qualificacao_responsavel'] = chunk['qualificacao_responsavel'].map(quals)
                 chunk['porte_empresa'] = chunk['porte_empresa'].map(porte)
 
-                chunk = chunk.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+                chunk = chunk.map(lambda x: x.strip() if isinstance(x, str) else x)
                 
                 chunk_organizado = chunk[[  
                     'cnpj_basico',
@@ -446,8 +446,8 @@ def add_cabecalho():
     lista_dfs = []
     situacao = {'01':'NULA', '02':'ATIVA', '03':'SUSPENSA','04':'INAPTA','08':'BAIXADA'}
     matriz = {'1':'MATRIZ', '2':'FILIAL'}
-    motivo = csvToSeriesIndex(caminho_motivo)
-    municipio = csvToSeriesIndex(caminho_municipios)
+    motivo = csvToSeriesIndex(caminho_motivo())
+    municipio = csvToSeriesIndex(caminho_municipios())
 
     chunk_size = 1000  
     saida_parquet = "estabelecimentos_completo.parquet"
@@ -510,7 +510,7 @@ def add_cabecalho():
                 chunk['municipio'] = chunk['municipio'].map(municipio)
 
                 # Remover espaços extras das colunas
-                chunk = chunk.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+                chunk = chunk.map(lambda x: x.strip() if isinstance(x, str) else x)
                 
                 # Reordenar o DataFrame (se necessário)
                 chunk_reordenado = chunk[['cnpj_basico', 'cnpj_ordem', 'cnpj_dv', 'identificador_matriz_filial', 
