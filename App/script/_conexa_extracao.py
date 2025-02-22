@@ -7,7 +7,7 @@ import sys
 from  datetime import datetime
 import shutil
 
-def conexao_download_e_extracao():
+def conexao_download_e_extracao_add_csv():
     # Função para criar diretórios
     def makedirs(path):
         if not os.path.exists(path):
@@ -146,4 +146,37 @@ def conexao_download_e_extracao():
                     break
     print("TODOS OS ARQUIVOS JÁ ESTÃO NAS SUAS PASTAS")
     print("Extração concluída.")
+    
+    # adicionando .csv nos arquivos organizado
+    pastas_socios = [
+        "App\\data\\arquivos_extraidos\\CNAE",
+        "App\\data\\arquivos_extraidos\\QUALS",
+        "App\\data\\arquivos_extraidos\\PAIS",
+        "App\\data\\arquivos_extraidos\\NATJU",
+        "App\\data\\arquivos_extraidos\\MUNIC",
+        "App\\data\\arquivos_extraidos\\MOTIC",
+        "App\\data\\arquivos_extraidos\\SIMPLES",
+        "App\\data\\arquivos_extraidos\\ESTABELE",
+        "App\\data\\arquivos_extraidos\\EMPRE",
+        "App\\data\\arquivos_extraidos\\SOCIO"
+        
+    ]
+
+    # Iterando por cada pasta
+    for pasta in pastas_socios:
+        print(f"Processando a pasta: {pasta}")
+        
+        # Iterando por todos os arquivos da pasta atual
+        for arquivo in os.listdir(pasta):
+            caminho_arquivo = os.path.join(pasta, arquivo)
+            
+            # Verificando se o arquivo não tem a extensão .csv
+            if not arquivo.endswith(".csv"):
+                novo_nome = arquivo + ".csv"  # Adicionando a extensão .csv
+                novo_caminho = os.path.join(pasta, novo_nome)
+                
+                # Renomeando o arquivo
+                os.rename(caminho_arquivo, novo_caminho)
+                print(f"Arquivo {arquivo} renomeado para {novo_nome}")
+    print("Todos os arquivos Receberam .CSV ")
             
