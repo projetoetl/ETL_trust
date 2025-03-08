@@ -8,8 +8,8 @@ import pyarrow as pa
 from App.script.caminhos_csv import caminho_cnae, caminho_motivo, caminho_simples, caminho_municipios,caminho_natureza,caminho_pais, caminho_qualificacao,caminho_socio, caminho_empresas, caminho_estabelecimento
 
 def csvToSeriesIndex(filename):
-    codigo = ""
-    descricao = ""    
+    codigo_list = []
+    descricao_list = []  
 
     for linha in pd.read_csv(filename,
                         sep=";", 
@@ -17,20 +17,18 @@ def csvToSeriesIndex(filename):
                         dtype=str, 
                         quotechar='"', 
                         header=None,  # Não usa a primeira linha como cabeçalho
-                        chunksize=30000):
+                        chunksize=500):
         
         linha.columns = [
             'CÓDIGO','DESCRIÇÃO'
         ]
 
-        codigo +=  linha['CÓDIGO']
-        descricao += linha['DESCRIÇÃO']
+        codigo_list.extend(linha['CÓDIGO'].tolist())
+        descricao_list.extend(linha['DESCRIÇÃO'].tolist())
+        
+        return pd.Series(descricao_list, index=codigo_list)
 
-    lista = pd.Series(list(descricao), index=list(codigo))
-    
-    return lista
-
-def add_cabecalho():
+def proc_cnae():
     caminho_arquivo = caminho_cnae()
     novo_arquivo = r"App/data/arquivos_extraidos/CNAE/CNAE_FORMATADO.CSV"  # Nome do novo arquivo
 
@@ -53,7 +51,7 @@ def add_cabecalho():
     df.to_csv(novo_arquivo, sep=";", index=False, encoding="latin1")
 
 
-
+def proc_motivo():
  # ---------MOTIVO 
     caminho_arquivo = caminho_motivo()
     novo_arquivo = "App/data/arquivos_extraidos/MOTIC/motivos_FORMATADO.csv"  # Nome do novo arquivo
@@ -78,7 +76,7 @@ def add_cabecalho():
     # Salvando em um novo CSV com os novos cabeçalhos
     df.to_csv(novo_arquivo, sep=";", index=False, encoding="latin1", quoting=1) 
     
-    
+def proc_muni():   
 # ------------- MUNICIPIO
     caminho_arquivo = caminho_municipios()
     novo_arquivo = "App/data/arquivos_extraidos/MUNIC/municipios_FORMATADO.csv"  # Nome do novo arquivo
@@ -103,7 +101,7 @@ def add_cabecalho():
     # Salvando em um novo CSV com os novos cabeçalhos
     df.to_csv(novo_arquivo, sep=";", index=False, encoding="latin1", quoting=1)  
     
-    
+def proc_natu():  
 # ------------- NATUREZA
     caminho_arquivo = caminho_natureza()
     novo_arquivo = "App/data/arquivos_extraidos/NATJU/natureza_FORMATADO.csv"  # Nome do novo arquivo
@@ -128,6 +126,8 @@ def add_cabecalho():
     # Salvando em um novo CSV com os novos cabeçalhos
     df.to_csv(novo_arquivo, sep=";", index=False, encoding="latin1", quoting=1) 
 
+
+def proc_qual():
 # ------------- QUALIFICAÇÃO
 
     caminho_arquivo = caminho_qualificacao()
@@ -154,7 +154,7 @@ def add_cabecalho():
     df.to_csv(novo_arquivo, sep=";", index=False, encoding="latin1", quoting=1)
 
 
-    
+def proc_pais():
  # ------------- PAIS
     caminho_arquivo = caminho_pais()
     novo_arquivo = "App/data/arquivos_extraidos/PAIS/pais_FORMATADO.csv"  # Nome do novo arquivo
@@ -179,9 +179,11 @@ def add_cabecalho():
     # Salvando em um novo CSV com os novos cabeçalhos
     df.to_csv(novo_arquivo, sep=";", index=False, encoding="latin1", quoting=1) 
 
-
+def proc_sim():
  # ------------- SIMPLES
     pastas_simples = caminho_simples()
+
+    # Usar glob para listar todos os arquivos CSV dentro da pasta
     listar_todos_os_arquivos = glob.glob(os.path.join(pastas_simples, "*.csv"))
 
     # Tamanho dos chunks para leitura dos CSVs
@@ -196,6 +198,7 @@ def add_cabecalho():
         for arquivos in listar_todos_os_arquivos:
             print(f"Lendo {arquivos}")
 
+            # Iterar sobre os chunks dos arquivos CSV
             for chunk in pd.read_csv(arquivos, 
                                     sep=";", 
                                     encoding="latin1",  
@@ -213,20 +216,16 @@ def add_cabecalho():
                                 'data_opcao_mei',
                                 'data_exclusao_mei']
                 
-                # # Garantir que a coluna 'cnpj_basico' exista
-                # if "cnpj_basico" not in chunk.columns:
-                #     chunk["cnpj_basico"] = chunk["opcao_pelo_simples"].str[:20]
-                
-                # Limpar espaços em branco
-                chunk = chunk.map(lambda x: x.strip() if isinstance(x, str) else x)
+                # Limpar espaços em branco nas colunas
+                chunk = chunk.apply(lambda x: x.strip() if isinstance(x, str) else x)
 
-                # Converter as colunas de data para o formato datetime
-                chunk['data_opcao_simples'] = pd.to_datetime(chunk['data_opcao_simples'], errors='coerce')
-                chunk['data_exclusao_simples'] = pd.to_datetime(chunk['data_exclusao_simples'], errors='coerce')
-                chunk['data_opcao_mei'] = pd.to_datetime(chunk['data_opcao_mei'], errors='coerce')
-                chunk['data_exclusao_mei'] = pd.to_datetime(chunk['data_exclusao_mei'], errors='coerce')
+                # Especificando o formato para a conversão de datas
+                chunk['data_opcao_simples'] = pd.to_datetime(chunk['data_opcao_simples'], format='%d/%m/%Y', errors='coerce')
+                chunk['data_exclusao_simples'] = pd.to_datetime(chunk['data_exclusao_simples'], format='%d/%m/%Y', errors='coerce')
+                chunk['data_opcao_mei'] = pd.to_datetime(chunk['data_opcao_mei'], format='%d/%m/%Y', errors='coerce')
+                chunk['data_exclusao_mei'] = pd.to_datetime(chunk['data_exclusao_mei'], format='%d/%m/%Y', errors='coerce')
 
-                # Manter as datas como datetime no formato 'yyyy-mm-dd' sem hora
+                # Manter as datas no formato 'yyyy-mm-dd' sem hora
                 chunk['data_opcao_simples'] = chunk['data_opcao_simples'].dt.date
                 chunk['data_exclusao_simples'] = chunk['data_exclusao_simples'].dt.date
                 chunk['data_opcao_mei'] = chunk['data_opcao_mei'].dt.date
@@ -244,31 +243,32 @@ def add_cabecalho():
                 # Adicionar o chunk à lista
                 lista_chunks.append(chunk_organizado)
 
+            # Atualizar barra de progresso após processar cada arquivo
             pbar.update(1)
 
     # Concatenar todos os chunks em um único DataFrame
-            dados_completos = pd.concat(lista_chunks, ignore_index=True)
+    dados_completos = pd.concat(lista_chunks, ignore_index=True)
 
-            # Criar a tabela do PyArrow
-            tabela_completa = pa.Table.from_pandas(dados_completos)
+    # Criar a tabela do PyArrow
+    tabela_completa = pa.Table.from_pandas(dados_completos)
 
-            # Escrever todos os dados concatenados no arquivo Parquet
-            pq.write_table(tabela_completa, saindo_do_novo_arquivo, compression="SNAPPY")
+    # Escrever todos os dados concatenados no arquivo Parquet
+    pq.write_table(tabela_completa, saindo_do_novo_arquivo, compression="SNAPPY")
 
+    # Verificação do arquivo final
+    if os.path.exists(saindo_do_novo_arquivo):
+        print("Arquivo Parquet salvo com sucesso!")
+    else:
+        print("O arquivo Parquet não foi gerado.")
+
+    # Liberação de memória
+    lista_chunks.clear()
+    print('LIBERAÇÃO DE MEMÓRIA FEITA')
+    print('SEGUINDO PARA O PROCESSO DOS SÓCIOS')
             
             
-            # Verificação do arquivo final
-            if os.path.exists(saindo_do_novo_arquivo):
-                print("Arquivo Parquet salvo com sucesso!")
-            else:
-                print("O arquivo Parquet não foi gerado.")
-                
-            lista_chunks.clear()
-        print('LIBERAÇÃO DE MEMÓRIA FEITA')
-        print('SEGUINDO PARA O PROCESSO DOS SÓCIOS')
-
- # ------------- SOCIO
-
+def proc_socio():
+    # ------------- SOCIO
     pasta_socios = caminho_socio()
 
     # Usar glob para listar todos os arquivos CSV dentro da pasta
@@ -276,74 +276,70 @@ def add_cabecalho():
 
     # Lista para armazenar os DataFrames de cada arquivo
     lista_dfs = []
-    tipo_socio = {'1':'Pessoa Jurídica', '2':'Pessoa Física', '3':'Estrangeiro'}
+
+    # Mapeamento
+    tipo_socio = {'1': 'Pessoa Jurídica', '2': 'Pessoa Física', '3': 'Estrangeiro'}
     paises = csvToSeriesIndex(caminho_pais())
     quals = csvToSeriesIndex(caminho_qualificacao())
 
-    # Iterar sobre os arquivos CSV e ler cada um
-    for arquivo in arquivos_csv:
-        # Ler o arquivo CSV, agora utilizando a primeira linha como cabeçalho
-        df = pd.read_csv(arquivo, 
-                        sep=";", 
-                        encoding="latin1",  
-                        dtype=str, 
-                        quotechar='"', 
-                        header=None)  # Não usa a primeira linha como cabeçalho
-        
-        # Atribuir os nomes das colunas manualmente, com base na estrutura esperada
-        colunas = [
-            "cnpj_basico", "identificador_socio", "nome_socio_razao_social", 
-            "cpf_cnpj_socio", "qualificacao_socio", "data_entrada_sociedade", 
-            "pais", "representante_legal", "nome_do_representante", 
-            "qualificacao_representante_legal", "faixa_etaria"
-        ]
-        
-        # Atribuir as colunas ao DataFrame
-        df.columns = colunas
+    with tqdm(total=len(arquivos_csv), desc="Processando os arquivos", unit=" arquivos") as pbar:
+        # Iterar sobre os arquivos CSV e ler cada um
+        for arquivo in arquivos_csv:
 
-        # Verificar os nomes das colunas para garantir que estão corretos
-        # print(f"Colunas do arquivo {arquivo}: {df.columns.tolist()}")  # Exibe as colunas do arquivo
+            # Ler o arquivo CSV, agora utilizando a primeira linha como cabeçalho
+            df = pd.read_csv(arquivo, 
+                             sep=";", 
+                             encoding="latin1",  
+                             dtype=str, 
+                             quotechar='"', 
+                             header=None)  # Não usa a primeira linha como cabeçalho
 
-        # Essas verificações abaixo estão na mesma linha que não faz sentido, CNPJ não pode ser substituido por nada e nem razão social, se não tiver deixar em branco (Rafael)
+            # Atribuir os nomes das colunas manualmente, com base na estrutura esperada
+            colunas = [
+                "cnpj_basico", "identificador_socio", "nome_socio_razao_social", 
+                "cpf_cnpj_socio", "qualificacao_socio", "data_entrada_sociedade", 
+                "pais", "representante_legal", "nome_do_representante", 
+                "qualificacao_representante_legal", "faixa_etaria"
+            ]
 
-        # # Verificar se a coluna 'cnpj_basico' existe, e se não, criar com base no identificador_socio
-        # if 'cnpj_basico' not in df.columns:
-        #     print(f"Coluna 'cnpj_basico' não encontrada no arquivo {arquivo}, criando a partir de 'identificador_socio'.")
-        #     df['cnpj_basico'] = df['identificador_socio'].str[:8]  # Criar a coluna com os 8 primeiros caracteres de 'identificador_socio'
+            # Atribuir as colunas ao DataFrame
+            df.columns = colunas
 
-        # # Verificar se a coluna 'nome_socio_razao_social' existe, e se não, criar com base no identificador_socio
-        # if 'nome_socio_razao_social' not in df.columns:
-        #     print(f"Coluna 'nome_socio_razao_social' não encontrada no arquivo {arquivo}, criando a partir de 'identificador_socio'.")
-        #     df['nome_socio_razao_social'] = df['identificador_socio'].str[8:]  # Criar a coluna com o restante de 'identificador_socio'
+            # Substituição dos valores na tabela
+            df['identificador_socio'] = df['identificador_socio'].map(tipo_socio)
+            df['qualificacao_socio'] = df['qualificacao_socio'].map(quals)
+            df['pais'] = df['pais'].map(paises)
 
-        # Substituição dos valores na tabela
-        df['identificador_socio'] = df['identificador_socio'].map(tipo_socio)
-        df['qualificacao_socio'] = df['qualificacao_socio'].map(quals)
-        df['pais'] = df['pais'].map(paises)
+            # Remover espaços extras das colunas
+            df = df.apply(lambda x: x.strip() if isinstance(x, str) else x)
 
-        # Remover espaços extras das colunas
-        df = df.map(lambda x: x.strip() if isinstance(x, str) else x)
+            # Reordenar as colunas conforme o formato desejado
+            df_reordenado = df[['cnpj_basico', 'identificador_socio', 'nome_socio_razao_social', 'cpf_cnpj_socio', 
+                                'qualificacao_socio', 'data_entrada_sociedade', 'pais', 'representante_legal', 
+                                'nome_do_representante', 'qualificacao_representante_legal', 'faixa_etaria']]
 
-        # Reordenar as colunas conforme o formato desejado
-        df_reordenado = df[['cnpj_basico', 'identificador_socio', 'nome_socio_razao_social', 'cpf_cnpj_socio', 
-                            'qualificacao_socio', 'data_entrada_sociedade', 'pais', 'representante_legal', 
-                            'nome_do_representante', 'qualificacao_representante_legal', 'faixa_etaria']]
+            # Adicionar o DataFrame à lista
+            lista_dfs.append(df_reordenado)
 
-        # Adicionar o DataFrame à lista
-        lista_dfs.append(df_reordenado)
+            # Atualizar a barra de progresso
+            pbar.update(1)
 
-    # Concatenar todos os DataFrames em um único
-    df_completo = pd.concat(lista_dfs, ignore_index=True)
+        # Concatenar todos os DataFrames em um único DataFrame após o laço
+        df_completo = pd.concat(lista_dfs, ignore_index=True)
 
-    # Salvar o DataFrame completo em um novo arquivo CSV
-    df_completo.to_csv("socios_completo.csv", index=False, sep=";", 
-                    encoding="latin1", quoting=1)  
-    lista_dfs.clear()
-    print('LIBERAÇÃO DE MEMÓRIA FEITA')
-    print('SEGUINDO PARA O PROCESSO DAS EMPRESAS')
+        # Salvar o DataFrame completo em um novo arquivo CSV
+        df_completo.to_csv("socios_completo.csv", index=False, sep=";", 
+                            encoding="latin1", quoting=1)
+
+        # Liberação de memória e próxima etapa
+        lista_dfs.clear()
+        print('LIBERAÇÃO DE MEMÓRIA FEITA')
+        print('SEGUINDO PARA O PROCESSO DAS EMPRESAS')
+
+
+def proc_empresas():
     
-
-
+    quals = csvToSeriesIndex(caminho_qualificacao())
  # ------------- EMPRESAS
 
     pastas_das_empresas =  caminho_empresas()
@@ -391,7 +387,7 @@ def add_cabecalho():
                 chunk['qualificacao_responsavel'] = chunk['qualificacao_responsavel'].map(quals)
                 chunk['porte_empresa'] = chunk['porte_empresa'].map(porte)
 
-                chunk = chunk.map(lambda x: x.strip() if isinstance(x, str) else x)
+                chunk = chunk.apply(lambda x: x.strip() if isinstance(x, str) else x)
                 
                 chunk_organizado = chunk[[  
                     'cnpj_basico',
@@ -435,7 +431,7 @@ def add_cabecalho():
 
    
 
-
+def proc_estab():
 # ------------- ESTABELECIMENTO
 
     estabelecimento = caminho_estabelecimento()
@@ -444,11 +440,12 @@ def add_cabecalho():
 
     # Lista para armazenar os DataFrames de cada arquivo
     lista_dfs = []
-    situacao = {'01':'NULA', '02':'ATIVA', '03':'SUSPENSA','04':'INAPTA','08':'BAIXADA'}
-    matriz = {'1':'MATRIZ', '2':'FILIAL'}
+    situacao = {'01': 'NULA', '02': 'ATIVA', '03': 'SUSPENSA', '04': 'INAPTA', '08': 'BAIXADA'}
+    matriz = {'1': 'MATRIZ', '2': 'FILIAL'}
     motivo = csvToSeriesIndex(caminho_motivo())
     municipio = csvToSeriesIndex(caminho_municipios())
-
+    paises = csvToSeriesIndex(caminho_pais())
+    
     chunk_size = 1000  
     saida_parquet = "estabelecimentos_completo.parquet"
 
@@ -498,32 +495,39 @@ def add_cabecalho():
                                 'situacao_especial',
                                 'data_situacao_especial']
                 
-                # Verificar se a coluna 'cnpj_basico' existe, e se não, criar com base no 'cnpj_ordem'
-                # if 'cnpj_basico' not in chunk.columns:
-                #     chunk['cnpj_basico'] = chunk['cnpj_ordem'].str[:8]  
-
-                # Substituindo valores na tabela com valores encontrados em outras tabelas
                 chunk['situacao_cadastral'] = chunk['situacao_cadastral'].map(situacao)
                 chunk['pais'] = chunk['pais'].map(paises)
                 chunk['identificador_matriz_filial'] = chunk['identificador_matriz_filial'].map(matriz)
                 chunk['motivo_situacao_cadastral'] = chunk['motivo_situacao_cadastral'].map(motivo)
-                chunk['municipio'] = chunk['municipio'].map(municipio)
+                
+                
+                # Agora você pode mapear normalmente
+                chunk['municipio_mapeado'] = chunk['municipio'].map(municipio)
+                  
+                             
+                                
 
                 # Remover espaços extras das colunas
-                chunk = chunk.map(lambda x: x.strip() if isinstance(x, str) else x)
+                chunk = chunk.apply(lambda x: x.strip() if isinstance(x, str) else x)
                 
                 # Reordenar o DataFrame (se necessário)
                 chunk_reordenado = chunk[['cnpj_basico', 'cnpj_ordem', 'cnpj_dv', 'identificador_matriz_filial', 
                                         'nome_fantasia', 'situacao_cadastral', 'data_situacao_cadastral', 
                                         'motivo_situacao_cadastral', 'nome_cidade_exterior', 'pais', 
-                                        'data_inicio_atividade', 'cnae_fiscal_principal', 
+                                       'data_inicio_atividade', 'cnae_fiscal_principal', 
                                         'cnae_fiscal_secundaria', 'tipo_logradouro', 'logradouro', 
-                                        'numero', 'complemento', 'bairro', 'cep', 'uf', 'municipio', 
+                                       'numero', 'complemento', 'bairro', 'cep', 'uf', 'municipio', 
                                         'ddd_1', 'telefone_1', 'ddd_2', 'telefone_2', 'ddd_fax', 'fax', 
                                         'correio_eletronico', 'situacao_especial', 'data_situacao_especial']]
 
+                # Resetar o índice para garantir que seja único e sequencial
+                chunk_reordenado = chunk_reordenado.reset_index(drop=True)
+
+                # Garantir que o índice seja único (se necessário, adicionar uma coluna para garantir unicidade)
+                chunk_reordenado['unique_id'] = chunk_reordenado.index + len(lista_dfs) * chunk_size
+
                 # Verificar se o chunk tem dados antes de tentar convertê-lo para tabela Arrow
-                if not chunk.empty:
+                if not chunk_reordenado.empty:
                     schema = pa.schema([
                         ("cnpj_basico", pa.string()),
                         ("cnpj_ordem", pa.string()),
@@ -557,17 +561,24 @@ def add_cabecalho():
                         ("data_situacao_especial", pa.string())
                     ])
                     
-                    tabela = pa.Table.from_pandas(chunk, schema=schema)
+                    tabela = pa.Table.from_pandas(chunk_reordenado, schema=schema)
                     lista_dfs.append(tabela)
                 else:
                     print(f"Arquivo {arquivo} contém chunk vazio e não foi adicionado.")
 
             pbar.update(1)
 
-            # Verificar se a lista de tabelas não está vazia antes de tentar concatenar
-            if lista_dfs:
-                tabela_final = pa.concat_tables(lista_dfs)
-                pq.write_table(tabela_final, saida_parquet, compression="SNAPPY")
-                print("✅ Todos os arquivos CSV foram combinados e salvos em um único Parquet estabelecimento!")
-            else:
-                print("Erro: Nenhuma tabela válida foi adicionada à lista.")
+        # Verificar se a lista de tabelas não está vazia antes de tentar concatenar
+        if lista_dfs:
+            # Concatenar as tabelas e reatribuir o índice
+            tabela_final = pa.concat_tables(lista_dfs, ignore_index=True)  
+            pq.write_table(tabela_final, saida_parquet, compression="SNAPPY")
+            print("✅ Todos os arquivos CSV foram combinados e salvos em um único Parquet com sucesso!")        
+        else:
+            print("Erro: Nenhuma tabela válida foi adicionada à lista.")
+
+        lista_dfs.clear()
+        print('LIBERAÇÃO DE MEMÓRIA FEITA')
+        print('PROCESSO FINALIZADO')
+        
+        ##

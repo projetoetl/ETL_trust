@@ -1,7 +1,10 @@
 App/.venv
 App/data
 App\__pycache__
+<<<<<<< HEAD
+=======
 ARQUIVOS
+>>>>>>> c9f11c2d1dea44c69ef971651bba1ae1fdd3e382
 data_pronto
 # Ignorar arquivos compilados do Python
 *.pyc
